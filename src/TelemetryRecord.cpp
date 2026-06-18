@@ -1,19 +1,9 @@
-#include <iostream>
+#include "TelemetryRecord.h"
+
 #include <fstream>
-#include <string>
 #include <stdexcept>
 
 using namespace std;
-
-struct TelemetryRecord
-{
-    int timestamp_ms;
-    double battery_voltage;
-    double temperature_c;
-    double current_draw_a;
-    string link_status;
-    bool sensor_valid;
-};
 
 string getNextField(istream& fileStream) {
     string next;
@@ -21,7 +11,7 @@ string getNextField(istream& fileStream) {
     return next;
 }
 
-TelemetryRecord loadTelemetry (string filename) {
+TelemetryRecord loadTelemetry(const string& filename) {
     TelemetryRecord currentRecord;
     ifstream telemetryReport(filename);
 
@@ -38,27 +28,11 @@ TelemetryRecord loadTelemetry (string filename) {
     string sensorValidText;
     getline(telemetryReport, sensorValidText);
 
-    if (!sensorValidText.empty() && sensorValidText.back() == '\r')
-    {
+    if (!sensorValidText.empty() && sensorValidText.back() == '\r') {
         sensorValidText.pop_back();
     }
 
-    currentRecord.sensor_valid = (getNextField(telemetryReport) == "true");
+    currentRecord.sensor_valid = (sensorValidText == "true");
 
     return currentRecord;
-}
-
-
-int main()
-{
-    TelemetryRecord test = loadTelemetry("baseTest.csv");
-
-    cout << test.timestamp_ms << " "
-         << test.battery_voltage << " "
-         << test.temperature_c << " "
-         << test.current_draw_a << " "
-         << test.link_status << " "
-         << test.sensor_valid;
-
-    return 0;
 }
