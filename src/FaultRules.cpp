@@ -1,10 +1,6 @@
 #include "FaultRules.h"
 
 HealthState evaluateHealth(const TelemetryRecord& record) {
-    /*
-    setting up the ranges for which a certain
-    number triggers a warning or critical sign
-    */ 
     const double BATTERY_CRITICAL_V = 10.0;
     const double BATTERY_WARNING_V = 12.0;
 
@@ -14,7 +10,7 @@ HealthState evaluateHealth(const TelemetryRecord& record) {
     const double CURRENT_WARNING_A = 8.0;
     const double CURRENT_CRITICAL_A = 12.0;
 
-    bool link_ok = (record.link_status == "OK");
+    bool link_ok = record.link_status;
 
     if (!record.sensor_valid) {
         return HealthState::FAULT;

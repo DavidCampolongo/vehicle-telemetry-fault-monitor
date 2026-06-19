@@ -1,20 +1,6 @@
 # TODO
 
-## 1. Parse Multiple Telemetry Samples
-
-* Update the parser to read multiple rows from a CSV file
-* Make it properly skip the CSV header row
-* Store parsed records in `std::vector<TelemetryRecord>`
-* Support the current sample telemetry format:
-
-  * `timestamp_ms`
-  * `battery_voltage`
-  * `temperature_c`
-  * `current_draw_a`
-  * `link_ok`
-  * `sensor_valid`
-
-## 2. Add Fault Event Logging
+## 1. Add Fault Event Logging
 
 * Create a `FaultEvent` structure
 * Store:
