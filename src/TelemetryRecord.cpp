@@ -1,5 +1,6 @@
 #include "TelemetryRecord.h"
 
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -8,21 +9,77 @@
 
 using namespace std;
 
-string getNextField(istream& inputStream) {
+namespace {
+const string EXPECTED_HEADER =
+    "timestamp_ms,battery_voltage,temperature_c,current_draw_a,link_status,sensor_valid";
+
+void removeTrailingCarriageReturn(string& text) {
+    if (!text.empty() && text.back() == '\r') {
+        text.pop_back();
+    }
+}
+
+void validateFieldCount(const string& line) {
+    const int EXPECTED_COMMAS = 5;
+    int commaCount = static_cast<int>(count(line.begin(), line.end(), ','));
+
+    if (commaCount != EXPECTED_COMMAS) {
+        throw runtime_error("Expected 6 CSV fields");
+    }
+}
+
+string getNextField(istream& inputStream, const string& fieldName) {
     string next;
 
     if (!getline(inputStream, next, ',')) {
-        throw runtime_error("Missing CSV field");
+        throw runtime_error("Missing CSV field: " + fieldName);
     }
 
-    if (!next.empty() && next.back() == '\r') {
-        next.pop_back();
-    }
-
+    removeTrailingCarriageReturn(next);
     return next;
 }
 
-bool parseBoolField(const string& field) {
+int parseIntField(const string& field, const string& fieldName) {
+    size_t parsedCharacters = 0;
+
+    try {
+        int value = stoi(field, &parsedCharacters);
+
+        if (parsedCharacters != field.size()) {
+            throw runtime_error("Invalid integer field: " + fieldName);
+        }
+
+        return value;
+    }
+    catch (const invalid_argument&) {
+        throw runtime_error("Invalid integer field: " + fieldName);
+    }
+    catch (const out_of_range&) {
+        throw runtime_error("Integer field out of range: " + fieldName);
+    }
+}
+
+double parseDoubleField(const string& field, const string& fieldName) {
+    size_t parsedCharacters = 0;
+
+    try {
+        double value = stod(field, &parsedCharacters);
+
+        if (parsedCharacters != field.size()) {
+            throw runtime_error("Invalid numeric field: " + fieldName);
+        }
+
+        return value;
+    }
+    catch (const invalid_argument&) {
+        throw runtime_error("Invalid numeric field: " + fieldName);
+    }
+    catch (const out_of_range&) {
+        throw runtime_error("Numeric field out of range: " + fieldName);
+    }
+}
+
+bool parseBoolField(const string& field, const string& fieldName) {
     if (field == "true") {
         return true;
     }
@@ -31,20 +88,34 @@ bool parseBoolField(const string& field) {
         return false;
     }
 
-    throw runtime_error("Invalid boolean field: " + field);
+    throw runtime_error("Invalid boolean field: " + fieldName);
+}
 }
 
 TelemetryRecord ParseTelemetryLine(const string& line) {
+    validateFieldCount(line);
+
     stringstream ss(line);
 
     TelemetryRecord currentRecord {};
 
-    currentRecord.timestamp_ms = stoi(getNextField(ss));
-    currentRecord.battery_voltage = stod(getNextField(ss));
-    currentRecord.temperature_c = stod(getNextField(ss));
-    currentRecord.current_draw_a = stod(getNextField(ss));
-    currentRecord.link_ok = parseBoolField(getNextField(ss));
-    currentRecord.sensor_valid = parseBoolField(getNextField(ss));
+    currentRecord.timestamp_ms =
+        parseIntField(getNextField(ss, "timestamp_ms"), "timestamp_ms");
+
+    currentRecord.battery_voltage =
+        parseDoubleField(getNextField(ss, "battery_voltage"), "battery_voltage");
+
+    currentRecord.temperature_c =
+        parseDoubleField(getNextField(ss, "temperature_c"), "temperature_c");
+
+    currentRecord.current_draw_a =
+        parseDoubleField(getNextField(ss, "current_draw_a"), "current_draw_a");
+
+    currentRecord.link_ok =
+        parseBoolField(getNextField(ss, "link_status"), "link_status");
+
+    currentRecord.sensor_valid =
+        parseBoolField(getNextField(ss, "sensor_valid"), "sensor_valid");
 
     return currentRecord;
 }
@@ -60,15 +131,21 @@ vector<TelemetryRecord> ParseTelemetryFile(const string& filename) {
     string line;
     int lineNumber = 0;
 
-    // Skip header line
     if (!getline(telemetryReport, line)) {
         throw runtime_error("Telemetry file is empty: " + filename);
     }
 
     ++lineNumber;
+    removeTrailingCarriageReturn(line);
+
+    if (line != EXPECTED_HEADER) {
+        throw runtime_error("Unexpected CSV header in file: " + filename);
+    }
 
     while (getline(telemetryReport, line)) {
         ++lineNumber;
+
+        removeTrailingCarriageReturn(line);
 
         if (line.empty()) {
             continue;
