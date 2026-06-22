@@ -8,7 +8,7 @@ struct TelemetryRecord {
     double battery_voltage;
     double temperature_c;
     double current_draw_a;
-    bool link_status;
+    bool link_ok;
     bool sensor_valid;
 };
 

@@ -43,7 +43,7 @@ TelemetryRecord ParseTelemetryLine(const string& line) {
     currentRecord.battery_voltage = stod(getNextField(ss));
     currentRecord.temperature_c = stod(getNextField(ss));
     currentRecord.current_draw_a = stod(getNextField(ss));
-    currentRecord.link_status = parseBoolField(getNextField(ss));
+    currentRecord.link_ok = parseBoolField(getNextField(ss));
     currentRecord.sensor_valid = parseBoolField(getNextField(ss));
 
     return currentRecord;

@@ -15,7 +15,7 @@ void printRecordWithState(const TelemetryRecord& record) {
          << record.battery_voltage << " "
          << record.temperature_c << " "
          << record.current_draw_a << " "
-         << record.link_status << " "
+         << record.link_ok << " "
          << record.sensor_valid << " -> "
          << toString(state) << endl;
 }
@@ -25,13 +25,9 @@ int main() {
         vector<TelemetryRecord> records =
             ParseTelemetryFile("data/sample_telemetry.csv");
 
-        if (records.size() < 5) {
-            cerr << "Not enough telemetry records loaded.\n";
-            return 1;
+        for (const TelemetryRecord& record : records) {
+            printRecordWithState(record);
         }
-
-        printRecordWithState(records[0]);
-        printRecordWithState(records[4]);
     }
     catch (const exception& error) {
         cerr << "Error: " << error.what() << endl;
