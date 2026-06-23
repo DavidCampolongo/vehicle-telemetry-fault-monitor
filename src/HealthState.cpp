@@ -16,3 +16,20 @@ std::string toString(HealthState state) {
 
     return "UNKNOWN";
 }
+
+int severityRank(HealthState state) {
+    switch (state) {
+    case HealthState::INIT:
+        return 0;
+    case HealthState::NOMINAL:
+        return 1;
+    case HealthState::WARNING:
+        return 2;
+    case HealthState::CRITICAL:
+        return 3;
+    case HealthState::FAULT:
+        return 4;
+    }
+
+    return -1;
+}

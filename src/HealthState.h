@@ -11,3 +11,5 @@ enum class HealthState {
 };
 
 std::string toString(HealthState state);
+
+int severityRank(HealthState state);
