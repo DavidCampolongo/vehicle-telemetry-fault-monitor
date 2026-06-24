@@ -1,36 +1,26 @@
-#include <iostream>
-#include <vector>
 #include <exception>
+#include <iostream>
+#include <string>
+#include <vector>
 
+#include "FaultMonitor.h"
+#include "ReportWriter.h"
 #include "TelemetryRecord.h"
-#include "HealthState.h"
-#include "FaultRules.h"
 
-using namespace std;
+int main(int argc, char* argv[]) {
+    const std::string filename =
+        argc > 1 ? argv[1] : "data/sample_telemetry.csv";
 
-void printRecordWithState(const TelemetryRecord& record) {
-    HealthState state = evaluateHealth(record);
-
-    cout << record.timestamp_ms << " "
-         << record.battery_voltage << " "
-         << record.temperature_c << " "
-         << record.current_draw_a << " "
-         << record.link_ok << " "
-         << record.sensor_valid << " -> "
-         << toString(state) << endl;
-}
-
-int main() {
     try {
-        vector<TelemetryRecord> records =
-            ParseTelemetryFile("data/sample_telemetry.csv");
+        std::vector<TelemetryRecord> records = ParseTelemetryFile(filename);
 
-        for (const TelemetryRecord& record : records) {
-            printRecordWithState(record);
-        }
+        FaultMonitor monitor;
+        monitor.processRecords(records);
+
+        printReport(monitor.getSummary(), std::cout);
     }
-    catch (const exception& error) {
-        cerr << "Error: " << error.what() << endl;
+    catch (const std::exception& error) {
+        std::cerr << "Error: " << error.what() << '\n';
         return 1;
     }
 
