@@ -78,8 +78,8 @@ src/
   FaultRules.h
   HealthState.cpp
   HealthState.h
-  ReportWriter.cpp
-  ReportWriter.h
+  ReportWrite.cpp
+  ReportWrite.h
   TelemetryRecord.cpp
   TelemetryRecord.h
   main.cpp
