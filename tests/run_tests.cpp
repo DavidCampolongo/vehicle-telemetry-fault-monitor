@@ -1,5 +1,6 @@
 #include <cassert>
 #include <exception>
+#include <string>
 #include <vector>
 
 #include "FaultMonitor.h"
@@ -56,6 +57,40 @@ void testFaultRules() {
     assert(evaluateTelemetry(fault).state == HealthState::FAULT);
 }
 
+void testReportsMultipleWarningReasons() {
+    TelemetryRecord record {
+        1000,
+        10.5,   // battery warning
+        78.0,   // temperature warning
+        5.0,
+        true,
+        true
+    };
+
+    HealthEvaluation evaluation = evaluateTelemetry(record);
+
+    assert(evaluation.state == HealthState::WARNING);
+    assert(evaluation.reason.find("battery voltage") != std::string::npos);
+    assert(evaluation.reason.find("temperature") != std::string::npos);
+}
+
+void testCriticalOverridesWarningButKeepsBothReasons() {
+    TelemetryRecord record {
+        1000,
+        10.5,   // battery warning
+        92.0,   // temperature critical
+        5.0,
+        true,
+        true
+    };
+
+    HealthEvaluation evaluation = evaluateTelemetry(record);
+
+    assert(evaluation.state == HealthState::CRITICAL);
+    assert(evaluation.reason.find("battery voltage") != std::string::npos);
+    assert(evaluation.reason.find("temperature") != std::string::npos);
+}
+
 void testFaultMonitorSummary() {
     std::vector<TelemetryRecord> records {
         { 0, 12.6, 35.0, 4.2, true, true },
@@ -83,6 +118,8 @@ int main() {
     testRejectsInvalidNumericField();
     testRejectsExtraCsvField();
     testFaultRules();
+    testReportsMultipleWarningReasons();
+    testCriticalOverridesWarningButKeepsBothReasons();
     testFaultMonitorSummary();
 
     return 0;
