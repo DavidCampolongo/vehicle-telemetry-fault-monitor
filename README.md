@@ -1,18 +1,44 @@
 # Vehicle Telemetry Fault Monitor
 
-A C++ host-based telemetry fault monitor that reads simulated vehicle telemetry from a CSV file, evaluates system health, records warning/critical/fault events, and prints a summary report.
+A C++17 command-line telemetry monitor that reads simulated vehicle data from a CSV file, evaluates each record against fault rules, tracks system health, and prints a summary report.
 
-## Features
+I built this project because I am interested in the kind of telemetry and fault-monitoring systems used in high-performance engineering environments. I am especially passionate about Formula 1, where teams depend on fast, reliable telemetry to understand car behavior, detect problems, and make decisions under pressure. This project is a small software model of that idea: raw vehicle data comes in, the system validates it, classifies health states, records important events, and produces a readable report.
 
-* Reads telemetry records from a CSV file
-* Validates CSV header and field count
-* Parses numeric and boolean telemetry fields
-* Evaluates system health using fault rules
-* Tracks health state counts
-* Tracks the worst state observed
-* Records warning, critical, and fault events
-* Prints a clean telemetry report
-* Includes basic tests using `assert`
+## What This Project Demonstrates
+
+* C++17 programming
+* Modular source/header organization
+* CSV parsing and input validation
+* Error handling with exceptions
+* Rule-based fault detection
+* State tracking and severity ranking
+* Basic test coverage using `assert`
+* Separation between parsing, evaluation, monitoring, and reporting
+
+## System Overview
+
+```text
+CSV telemetry file
+        |
+        v
+Telemetry parser
+        |
+        v
+Fault rule engine
+        |
+        v
+Fault monitor / state tracker
+        |
+        v
+Console report
+```
+
+The program is intentionally split into small components:
+
+* `TelemetryRecord` parses and stores one row of telemetry data.
+* `FaultRules` evaluates one telemetry record and returns a health state plus a reason.
+* `FaultMonitor` processes records, counts states, tracks the worst state, and records events.
+* `ReportWriter` formats the final report.
 
 ## Telemetry Input Format
 
@@ -46,7 +72,7 @@ timestamp_ms,battery_voltage,temperature_c,current_draw_a,link_status,sensor_val
 
 ## Fault Rules
 
-The monitor evaluates each telemetry record using the following priority:
+The monitor evaluates each telemetry record using this severity order:
 
 ```text
 FAULT > CRITICAL > WARNING > NOMINAL
@@ -64,6 +90,8 @@ FAULT > CRITICAL > WARNING > NOMINAL
 | `current_draw_a > 8.0`                   | `WARNING`       |
 | No fault, critical, or warning condition | `NOMINAL`       |
 
+If multiple conditions are found in one record, the most severe state wins, while the report keeps the relevant reasons.
+
 ## Project Structure
 
 ```text
@@ -78,8 +106,8 @@ src/
   FaultRules.h
   HealthState.cpp
   HealthState.h
-  ReportWrite.cpp
-  ReportWrite.h
+  ReportWriter.cpp
+  ReportWriter.h
   TelemetryRecord.cpp
   TelemetryRecord.h
   main.cpp
@@ -87,31 +115,67 @@ src/
 tests/
   run_tests.cpp
 
-.gitignore
+CMakeLists.txt
 LICENSE
 README.md
 ```
 
-## Build
+## Build With CMake
 
-Compile the telemetry monitor with:
+This project builds on Windows, macOS, and Linux using CMake.
 
-```bash
-g++ -std=c++17 -Wall -Wextra -Wpedantic src/*.cpp -o telemetry_monitor.out
+### Windows
+
+From PowerShell:
+
+```powershell
+cmake -S . -B build
+cmake --build build --config Debug
 ```
 
-## Run
+Run the tests:
 
-Run using the default sample telemetry file:
-
-```bash
-./telemetry_monitor.out
+```powershell
+ctest --test-dir build --build-config Debug
 ```
 
-Or provide a CSV file path manually:
+Run the program:
+
+```powershell
+.\build\Debug\telemetry_monitor.exe
+```
+
+Run with an explicit CSV file:
+
+```powershell
+.\build\Debug\telemetry_monitor.exe data\sample_telemetry.csv
+```
+
+### macOS / Linux
+
+From a terminal:
 
 ```bash
-./telemetry_monitor.out data/sample_telemetry.csv
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+```
+
+Run the tests:
+
+```bash
+ctest --test-dir build
+```
+
+Run the program:
+
+```bash
+./build/telemetry_monitor
+```
+
+Run with an explicit CSV file:
+
+```bash
+./build/telemetry_monitor data/sample_telemetry.csv
 ```
 
 ## Example Output
@@ -131,46 +195,38 @@ State counts:
 Worst state observed: FAULT
 
 Events:
-  [2000 ms] NOMINAL -> WARNING: battery voltage in warning range
+  [2000 ms] NOMINAL -> WARNING: battery voltage in warning range; temperature in warning range
   [3000 ms] WARNING -> CRITICAL: temperature above critical threshold
-  [4000 ms] CRITICAL -> FAULT: communication link lost
+  [4000 ms] CRITICAL -> FAULT: communication link lost; battery voltage in warning range
   [5000 ms] FAULT -> FAULT: sensor invalid
 ```
 
-## Run Tests
+## Tests
 
-Compile the test runner:
+The test runner covers:
 
-```bash
-g++ -std=c++17 -Wall -Wextra -Wpedantic -I src \
-    tests/run_tests.cpp \
-    src/TelemetryRecord.cpp \
-    src/HealthState.cpp \
-    src/FaultRules.cpp \
-    src/FaultMonitor.cpp \
-    -o tests_runner.out
-```
+* Valid telemetry parsing
+* Rejection of invalid numeric fields
+* Rejection of malformed CSV rows
+* Health-state evaluation
+* Multiple warning reasons
+* Critical conditions overriding warnings
+* Fault monitor summary counts and event tracking
 
-Run the tests:
-
-```bash
-./tests_runner.out
-```
-
-The test runner uses `assert`, so no output means all tests passed.
+The tests use standard C++ `assert`, so a successful run should complete without assertion failures.
 
 ## Future Improvements
 
-Possible future improvements include:
+Possible next steps:
 
-* Add CMake support
 * Add a formal unit testing framework
-* Export reports to a text file
-* Add configurable threshold values
-* Add more telemetry fields
+* Add configurable thresholds through a config file
+* Export reports to a text file or JSON
 * Add timestamp ordering validation
-* Add JSON or config-file support
-* Add continuous stream processing mode
+* Add more vehicle telemetry channels
+* Add a live/streaming telemetry mode
+* Add a simple dashboard-style visualization layer
+* Expand this into an embedded-style monitor with memory-mapped status registers
 
 ## License
 
